@@ -30,6 +30,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.bar_construction = BarConstruction()
         self.opening_project_file = False
         self.force_deleted_by_btn = False
+        self.changed_table_item_style = False
         self.forces_table_data = {}
         self.set_table_items_alignment(self.bars_table)
         self.set_table_items_alignment(self.forces_table)
@@ -164,11 +165,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def set_table_slots(self):
         self.bars_table.cellChanged.connect(self.bars_table_cell_changed)
         self.forces_table.currentCellChanged.connect(self.forces_table_current_cell_changed)
-        self.forces_table.cellChanged.connect(self.forces_table_cell_changed)
+        self.forces_table.itemChanged.connect(self.forces_table_item_changed)
 
     def set_table_cell_color(self, table: QTableWidget, color: tuple, row: int):
         cols = table.columnCount()
         for col in range(cols):
+            self.changed_table_item_style = True
             table.item(row, col).setBackground(QBrush(QColor(*color)))
 
     def set_table_items_alignment(self, table: QTableWidget):
@@ -177,23 +179,32 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         for row in range(rows):
             for col in range(cols):
+                self.changed_table_item_style = True
                 table.item(row, col).setTextAlignment(Qt.AlignCenter)
 
-    def forces_table_cell_changed(self):
+    def forces_table_item_changed(self):
+        if self.changed_table_item_style:
+            self.changed_table_item_style = False
+            return
         current_item = self.forces_table.currentItem()
         if current_item is None:
             return
-
         if current_item.background() == QBrush(QColor(*Color.light_yellow)):
+            return
+        if self.force_deleted_by_btn:
+            self.force_deleted_by_btn = False
             return
         row = current_item.row()
         col = current_item.column()
 
         if col == 0:
-            item = QTableWidgetItem(self.forces_table_data[(row, col)])
-            if self.forces_table.item(row, col).text() != item.text():
-                self.forces_table.setItem(row, col, item)
-                item.setTextAlignment(Qt.AlignCenter)
+            try:
+                item = QTableWidgetItem(self.forces_table_data[(row, col)])
+                if self.forces_table.item(row, col).text() != item.text():
+                    self.forces_table.setItem(row, col, item)
+                    item.setTextAlignment(Qt.AlignCenter)
+            except KeyError:
+                return
         else:
             if not is_float(current_item.text()):
                 if self.forces_table.item(row, col).text() != self.forces_table_data[(row, col)]:
