@@ -20,7 +20,6 @@ class BarConstruction:
                 self.forces.clear()
 
     def change_force(self, node: int, force: float):
-        print(self.forces)
         if self.bars:
             self.forces[node - 1] = force
 
