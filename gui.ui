@@ -24,7 +24,7 @@
        </font>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="preprocessor_tab">
        <attribute name="title">
@@ -339,13 +339,13 @@
             <property name="currentIndex">
              <number>0</number>
             </property>
-            <widget class="QWidget" name="calculations_tab">
+            <widget class="QWidget" name="computations_tab">
              <attribute name="title">
               <string>Результаты расчетов</string>
              </attribute>
              <layout class="QGridLayout" name="gridLayout_7">
               <item row="3" column="0" colspan="5">
-               <widget class="QTableWidget" name="calculations_table">
+               <widget class="QTableWidget" name="computations_table">
                 <property name="enabled">
                  <bool>true</bool>
                 </property>
@@ -354,6 +354,9 @@
                   <family>Times New Roman</family>
                   <pointsize>14</pointsize>
                  </font>
+                </property>
+                <property name="sortingEnabled">
+                 <bool>true</bool>
                 </property>
                 <attribute name="horizontalHeaderDefaultSectionSize">
                  <number>205</number>

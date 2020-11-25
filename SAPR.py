@@ -78,6 +78,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                   f"S{i + 1}({L}) = {S2}\n\n")
 
         self.tab_widget_main.setTabEnabled(1, True)
+        self.tab_widget_main.setCurrentIndex(1)
 
     def redraw_nodal_forces(self):
         drawn_nodal_forces = [force for force in self.canvas.items()
@@ -426,6 +427,43 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.opening_project_file = False
         self.bar_construction.computed = False
+        self.tab_widget_main.setCurrentIndex(0)
+        self.computations_table.setRowCount(0)
+        self.tab_widget_main.setTabEnabled(1, False)
+
+    def extreme_values_btn_clicked(self):
+        components = []
+        bars_count = len(self.bar_construction.bars)
+        for n_bar in range(bars_count):
+            N1 = self.bar_construction.compute_Nx(n_bar, 0)
+            U1 = self.bar_construction.compute_Ux(n_bar, 0)
+            S1 = self.bar_construction.compute_Sx(n_bar, 0)
+            components.append([n_bar + 1, 0, N1, U1, S1])
+
+            L = self.bar_construction.bars[n_bar]['L']
+            N2 = self.bar_construction.compute_Nx(n_bar, L)
+            U2 = self.bar_construction.compute_Ux(n_bar, L)
+            S2 = self.bar_construction.compute_Sx(n_bar, L)
+            components.append([n_bar + 1, L, N2, U2, S2])
+
+        self.computations_table.setRowCount(0)
+
+        rows = bars_count * 2
+        cols = self.computations_table.columnCount()
+        k = 0
+        for row in range(rows):
+            self.computations_table.insertRow(row)
+            for col in range(cols):
+                item = QTableWidgetItem(str(components[row][col]))
+                self.computations_table.setItem(row, col, item)
+                item.setTextAlignment(Qt.AlignCenter)
+                if col == cols - 1:
+                    if abs(components[row][col]) >= self.bar_construction.bars[int(row / 2)]['S']:
+                        item.setForeground(QColor("red"))
+            if (row + 1) % 2 == 1:
+                k += 1
+            if k % 2 == 1:
+                self.set_table_cell_color(self.computations_table, Color.light_gray, row)
 
     def terminations_btn_clicked(self):
         checked = self.terminations_btn_group.checkedButton().objectName()
@@ -441,6 +479,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.add_bar_btn.clicked.connect(self.add_bar_btn_clicked)
         self.del_bar_btn.clicked.connect(self.del_bar_btn_clicked)
         self.add_force_btn.clicked.connect(self.add_force_btn_clicked)
+        self.extreme_values_btn.clicked.connect(self.extreme_values_btn_clicked)
 
     def set_table_slots(self):
         self.bars_table.cellChanged.connect(self.bars_table_cell_changed)
