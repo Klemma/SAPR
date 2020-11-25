@@ -50,8 +50,34 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.set_table_slots()
         self.save_action.triggered.connect(self.save_project_file)
         self.open_action.triggered.connect(self.open_project_file)
+        self.compute_action.triggered.connect(self.compute_action_triggered)
         self.terminations_btn_group.buttonClicked.connect(self.terminations_btn_clicked)
         self.tab_widget_main.setTabEnabled(1, False)
+
+    def compute_action_triggered(self):
+        if len(self.bar_construction.bars) == 0:
+            msg_box = QMessageBox(QMessageBox.Critical, "Ошибка", "Сначала нужно добавить хотя бы один стержень!")
+            msg_box.exec()
+            return
+        self.bar_construction.compute_movements_vector()
+        for i in range(len(self.bar_construction.bars)):
+            L = self.bar_construction.bars[i]['L']
+            N1 = self.bar_construction.compute_Nx(i, 0)
+            N2 = self.bar_construction.compute_Nx(i, L)
+            print(f"N{i + 1}(0) = {N1}\n"
+                  f"N{i + 1}({L}) = {N2}\n\n")
+
+            U1 = self.bar_construction.compute_Ux(i, 0)
+            U2 = self.bar_construction.compute_Ux(i, L)
+            print(f"U{i + 1}(0) = {U1}\n"
+                  f"U{i + 1}({L}) = {U2}\n\n")
+
+            S1 = self.bar_construction.compute_Sx(i, 0)
+            S2 = self.bar_construction.compute_Sx(i, L)
+            print(f"S{i + 1}(0) = {S1}\n"
+                  f"S{i + 1}({L}) = {S2}\n\n")
+
+        self.tab_widget_main.setTabEnabled(1, True)
 
     def redraw_nodal_forces(self):
         drawn_nodal_forces = [force for force in self.canvas.items()
@@ -399,6 +425,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.redraw_terminations()
 
         self.opening_project_file = False
+        self.bar_construction.computed = False
 
     def terminations_btn_clicked(self):
         checked = self.terminations_btn_group.checkedButton().objectName()
@@ -539,6 +566,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.bar_construction.bars[row][property_name] = float(current_item.text())
             self.redraw_bar_forces()
             self.redraw_nodal_forces()
+            self.bar_construction.computed = False
 
     def add_bar_btn_clicked(self):
         if self.bar_properties_correct():
