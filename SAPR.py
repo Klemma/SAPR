@@ -1,4 +1,5 @@
 import sys
+import csv
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QBrush, QColor, QPen
@@ -51,32 +52,38 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.save_action.triggered.connect(self.save_project_file)
         self.open_action.triggered.connect(self.open_project_file)
         self.compute_action.triggered.connect(self.compute_action_triggered)
+        self.save_table_action.triggered.connect(self.save_table_action_triggered)
         self.terminations_btn_group.buttonClicked.connect(self.terminations_btn_clicked)
         self.tab_widget_main.setTabEnabled(1, False)
+
+    def save_table_action_triggered(self):
+        filename, _ = QFileDialog.getSaveFileName(self, "Save File", filter="*.csv")
+        if not filename:
+            return
+        rows = self.computations_table.rowCount()
+        cols = self.computations_table.columnCount()
+        table_data = []
+        for row in range(rows):
+            str_row = []
+            for col in range(cols):
+                str_row.append(self.computations_table.item(row, col).text())
+            table_data.append(str_row)
+        try:
+            with open(filename, 'w', newline='') as file:
+                csv_writer = csv.writer(file, delimiter=',')
+                csv_writer.writerow(["Стержень", "x", "N(x)", "U(x)", "S(x)"])
+                csv_writer.writerows(table_data)
+        except Exception as error:
+            msg_box = QMessageBox(QMessageBox.Critical, "Ошибка", str(error))
+            msg_box.exec()
 
     def compute_action_triggered(self):
         if len(self.bar_construction.bars) == 0:
             msg_box = QMessageBox(QMessageBox.Critical, "Ошибка", "Сначала нужно добавить хотя бы один стержень!")
             msg_box.exec()
             return
+
         self.bar_construction.compute_movements_vector()
-        for i in range(len(self.bar_construction.bars)):
-            L = self.bar_construction.bars[i]['L']
-            N1 = self.bar_construction.compute_Nx(i, 0)
-            N2 = self.bar_construction.compute_Nx(i, L)
-            print(f"N{i + 1}(0) = {N1}\n"
-                  f"N{i + 1}({L}) = {N2}\n\n")
-
-            U1 = self.bar_construction.compute_Ux(i, 0)
-            U2 = self.bar_construction.compute_Ux(i, L)
-            print(f"U{i + 1}(0) = {U1}\n"
-                  f"U{i + 1}({L}) = {U2}\n\n")
-
-            S1 = self.bar_construction.compute_Sx(i, 0)
-            S2 = self.bar_construction.compute_Sx(i, L)
-            print(f"S{i + 1}(0) = {S1}\n"
-                  f"S{i + 1}({L}) = {S2}\n\n")
-
         self.tab_widget_main.setTabEnabled(1, True)
         self.tab_widget_main.setCurrentIndex(1)
 
@@ -429,7 +436,90 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.bar_construction.computed = False
         self.tab_widget_main.setCurrentIndex(0)
         self.computations_table.setRowCount(0)
+        self.save_table_action.setEnabled(False)
         self.tab_widget_main.setTabEnabled(1, False)
+
+    def compute_section_btn_clicked(self):
+        if self.section_input.text() == '':
+            msg_box = QMessageBox(QMessageBox.Critical, "Ошибка", "Поле для ввода не должно быть пустым!")
+            msg_box.exec()
+            return
+
+        L = [self.bar_construction.bars[i]['L'] for i in range(len(self.bar_construction.bars))]
+        x_nodes = [sum(L[:i]) for i in range(1, len(L))]
+        try:
+            x = float(self.section_input.text())
+            total_len = 0
+            for i in range(len(self.bar_construction.bars)):
+                total_len += self.bar_construction.bars[i]['L']
+
+            if x < 0 or x > total_len:
+                raise ValueError
+
+            if x in x_nodes:
+                raise RuntimeError("Обнаружена коллизия! Задайте значение, не принадлежащее узловым точкам!")
+
+            n_bar = None
+            for i in range(1, len(self.bar_construction.bars) + 1):
+                if x <= sum(L[:i]):
+                    if i == 1:
+                        n_bar = i - 1
+                        break
+                    if i == len(self.bar_construction.bars):
+                        n_bar = i - 1
+                        x -= sum(L[:(i - 1)])
+                        break
+                    x -= sum(L[:(i - 1)])
+                    n_bar = i - 1
+                    break
+
+            self.Nx_section_label.setText(f"N(x) = {self.bar_construction.compute_Nx(n_bar, x)}")
+            self.Ux_section_label.setText(f"U(x) = {self.bar_construction.compute_Ux(n_bar, x)}")
+            Sx = self.bar_construction.compute_Sx(n_bar, x)
+            self.Sx_section_label.setText(f"S(x) = {Sx}")
+            if abs(Sx) >= self.bar_construction.bars[n_bar]['S']:
+                self.Sx_section_label.setStyleSheet("QLabel { color: red; font-family: Times New Roman; font-size: 12; }")
+            else:
+                self.Sx_section_label.setStyleSheet("QLabel { color: black; font-family: Times New Roman; font-size: 12; }")
+        except ValueError:
+            msg_box = QMessageBox(QMessageBox.Critical, "Ошибка",
+                                  f"Необходимо задать действительное число в промежутке от 0 до {sum(L)}!")
+            msg_box.exec()
+        except RuntimeError as error:
+            msg_box = QMessageBox(QMessageBox.Critical, "Ошибка", str(error))
+            msg_box.exec()
+
+    def discrete_values_btn_clicked(self):
+        components = []
+        bars_count = len(self.bar_construction.bars)
+        values_count = 10
+        for n_bar in range(bars_count):
+            step = self.bar_construction.bars[n_bar]['L'] / values_count
+            for i in range(values_count + 1):
+                x = step * i
+                Nx = self.bar_construction.compute_Nx(n_bar, x)
+                Ux = self.bar_construction.compute_Ux(n_bar, x)
+                Sx = self.bar_construction.compute_Sx(n_bar, x)
+                components.append([n_bar + 1, round(x, 4), Nx, Ux, Sx])
+
+        self.computations_table.setRowCount(0)
+
+        rows = len(components)
+        cols = self.computations_table.columnCount()
+        for row in range(rows):
+            self.computations_table.insertRow(row)
+            n_bar = components[row][0]
+            for col in range(cols):
+                item = QTableWidgetItem(str(components[row][col]))
+                self.computations_table.setItem(row, col, item)
+                item.setTextAlignment(Qt.AlignCenter)
+                if col == cols - 1:
+                    if abs(components[row][col]) >= self.bar_construction.bars[n_bar - 1]['S']:
+                        item.setForeground(QColor("red"))
+            if n_bar % 2 == 1:
+                self.set_table_cell_color(self.computations_table, Color.light_gray, row)
+
+        self.save_table_action.setEnabled(True)
 
     def extreme_values_btn_clicked(self):
         components = []
@@ -450,20 +540,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         rows = bars_count * 2
         cols = self.computations_table.columnCount()
-        k = 0
         for row in range(rows):
             self.computations_table.insertRow(row)
+            n_bar = components[row][0]
             for col in range(cols):
                 item = QTableWidgetItem(str(components[row][col]))
                 self.computations_table.setItem(row, col, item)
                 item.setTextAlignment(Qt.AlignCenter)
                 if col == cols - 1:
-                    if abs(components[row][col]) >= self.bar_construction.bars[int(row / 2)]['S']:
+                    if abs(components[row][col]) >= self.bar_construction.bars[n_bar - 1]['S']:
                         item.setForeground(QColor("red"))
-            if (row + 1) % 2 == 1:
-                k += 1
-            if k % 2 == 1:
+            if n_bar % 2 == 1:
                 self.set_table_cell_color(self.computations_table, Color.light_gray, row)
+
+        self.save_table_action.setEnabled(True)
 
     def terminations_btn_clicked(self):
         checked = self.terminations_btn_group.checkedButton().objectName()
@@ -480,6 +570,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.del_bar_btn.clicked.connect(self.del_bar_btn_clicked)
         self.add_force_btn.clicked.connect(self.add_force_btn_clicked)
         self.extreme_values_btn.clicked.connect(self.extreme_values_btn_clicked)
+        self.discrete_values_btn.clicked.connect(self.discrete_values_btn_clicked)
+        self.compute_section_btn.clicked.connect(self.compute_section_btn_clicked)
 
     def set_table_slots(self):
         self.bars_table.cellChanged.connect(self.bars_table_cell_changed)

@@ -355,6 +355,9 @@
                   <pointsize>14</pointsize>
                  </font>
                 </property>
+                <property name="editTriggers">
+                 <set>QAbstractItemView::NoEditTriggers</set>
+                </property>
                 <property name="sortingEnabled">
                  <bool>true</bool>
                 </property>
@@ -598,6 +601,8 @@
     </property>
     <addaction name="open_action"/>
     <addaction name="save_action"/>
+    <addaction name="separator"/>
+    <addaction name="save_table_action"/>
    </widget>
    <widget class="QMenu" name="processor_menu">
     <property name="title">
@@ -608,15 +613,14 @@
    <addaction name="file_menu"/>
    <addaction name="processor_menu"/>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
   <action name="open_action">
    <property name="text">
-    <string>Открыть</string>
+    <string>Открыть файл проекта</string>
    </property>
   </action>
   <action name="save_action">
    <property name="text">
-    <string>Сохранить</string>
+    <string>Сохранить файл проекта</string>
    </property>
   </action>
   <action name="action_3">
@@ -627,6 +631,14 @@
   <action name="compute_action">
    <property name="text">
     <string>Провести расчет</string>
+   </property>
+  </action>
+  <action name="save_table_action">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Сохранить таблицу расчетов</string>
    </property>
   </action>
  </widget>
