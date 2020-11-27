@@ -24,7 +24,7 @@
        </font>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="preprocessor_tab">
        <attribute name="title">
@@ -559,16 +559,31 @@
                    <attribute name="title">
                     <string>N(x)</string>
                    </attribute>
+                   <layout class="QGridLayout" name="gridLayout_2">
+                    <item row="0" column="0">
+                     <layout class="QVBoxLayout" name="Nx_epure_layout"/>
+                    </item>
+                   </layout>
                   </widget>
                   <widget class="QWidget" name="epure_ux_tab">
                    <attribute name="title">
                     <string>U(x)</string>
                    </attribute>
+                   <layout class="QGridLayout" name="gridLayout_6">
+                    <item row="0" column="0">
+                     <layout class="QVBoxLayout" name="Ux_epure_layout"/>
+                    </item>
+                   </layout>
                   </widget>
                   <widget class="QWidget" name="epure_sx_tab">
                    <attribute name="title">
                     <string>S(x)</string>
                    </attribute>
+                   <layout class="QGridLayout" name="gridLayout_8">
+                    <item row="0" column="0">
+                     <layout class="QVBoxLayout" name="Sx_epure_layout"/>
+                    </item>
+                   </layout>
                   </widget>
                  </widget>
                 </item>

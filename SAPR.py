@@ -1,15 +1,18 @@
 import sys
 import csv
+import numpy as np
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QBrush, QColor, QPen
 from PyQt5.QtWidgets import QMainWindow, QApplication, QTableWidgetItem, QMessageBox, QTableWidget, QFileDialog, \
     QGraphicsScene, QGraphicsRectItem, QGraphicsItemGroup, QGraphicsLineItem
+from matplotlib.backends.backend_qt5 import NavigationToolbar2QT
 
 from BarConstruction import BarConstruction
 from Colors import Color
 from ConstructionItems import ConstructionItems
 from gui import Ui_MainWindow
+from EpureCanvas import EpureCanvas
 
 
 def is_int(value: str) -> bool:
@@ -55,6 +58,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.save_table_action.triggered.connect(self.save_table_action_triggered)
         self.terminations_btn_group.buttonClicked.connect(self.terminations_btn_clicked)
         self.tab_widget_main.setTabEnabled(1, False)
+        self.Nx_epure = EpureCanvas(self.Nx_epure_layout)
+        self.Ux_epure = EpureCanvas(self.Ux_epure_layout)
+        self.Sx_epure = EpureCanvas(self.Sx_epure_layout)
+        self.set_epures_options()
+        self.paimon_label.setVisible(False)
 
     def save_table_action_triggered(self):
         filename, _ = QFileDialog.getSaveFileName(self, "Save File", filter="*.csv")
@@ -86,6 +94,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.bar_construction.compute_movements_vector()
         self.tab_widget_main.setTabEnabled(1, True)
         self.tab_widget_main.setCurrentIndex(1)
+        self.draw_epures()
 
     def redraw_nodal_forces(self):
         drawn_nodal_forces = [force for force in self.canvas.items()
@@ -443,6 +452,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if self.section_input.text() == '':
             msg_box = QMessageBox(QMessageBox.Critical, "Ошибка", "Поле для ввода не должно быть пустым!")
             msg_box.exec()
+            return
+
+        text = self.section_input.text()
+        if text == "paimon" or text == "Paimon" or text == "PAIMON":
+            if self.paimon_label.isVisible():
+                self.section_input.setText("")
+                QMessageBox(QMessageBox.Information, 'Paimon', 'Паймон уже здесь!').exec()
+                return
+            self.paimon_label.setVisible(True)
+            self.section_input.setText("")
             return
 
         L = [self.bar_construction.bars[i]['L'] for i in range(len(self.bar_construction.bars))]
@@ -815,6 +834,65 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 msg_box = QMessageBox(QMessageBox.Critical, "Ошибка", error)
             msg_box.exec()
             return False
+
+    def set_epures_options(self):
+        Nx_toolbar = NavigationToolbar2QT(self.Nx_epure, self)
+        self.Nx_epure_layout.addWidget(Nx_toolbar)
+        self.Nx_epure_layout.addWidget(self.Nx_epure)
+
+        Ux_toolbar = NavigationToolbar2QT(self.Ux_epure, self)
+        self.Ux_epure_layout.addWidget(Ux_toolbar)
+        self.Ux_epure_layout.addWidget(self.Ux_epure)
+
+        Sx_toolbar = NavigationToolbar2QT(self.Sx_epure, self)
+        self.Sx_epure_layout.addWidget(Sx_toolbar)
+        self.Sx_epure_layout.addWidget(self.Sx_epure)
+
+    def draw_epures(self):
+        self.Nx_epure.axes.cla()
+        self.Ux_epure.axes.cla()
+        self.Sx_epure.axes.cla()
+
+        self.Nx_epure.axes.grid()
+        self.Nx_epure.axes.set(title="Эпюра Nx")
+        self.Ux_epure.axes.grid()
+        self.Ux_epure.axes.set(title="Эпюра Ux")
+        self.Sx_epure.axes.grid()
+        self.Sx_epure.axes.set(title="Эпюра Sx")
+
+        bars_count = len(self.bar_construction.bars)
+        sum_bar_len = 0
+        x = np.zeros(shape=2, dtype=float)
+        y = np.zeros(shape=2, dtype=float)
+        for n_bar in range(bars_count):
+            bar_len = self.bar_construction.bars[n_bar]['L']
+
+            x[0], x[1] = sum_bar_len, sum_bar_len + bar_len
+            y[0], y[1] = self.bar_construction.compute_Nx(n_bar, 0), self.bar_construction.compute_Nx(n_bar, bar_len)
+            self.Nx_epure.axes.plot(x, y)
+            self.Nx_epure.axes.fill_between(x, 0, y)
+
+            y[0], y[1] = self.bar_construction.compute_Sx(n_bar, 0), self.bar_construction.compute_Sx(n_bar, bar_len)
+            self.Sx_epure.axes.plot(x, y)
+            self.Sx_epure.axes.fill_between(x, 0, y)
+
+            sum_bar_len += bar_len
+        self.Nx_epure.fig.canvas.draw()
+        self.Sx_epure.fig.canvas.draw()
+
+        sum_bar_len = 0
+        points_num = 100
+        for n_bar in range(bars_count):
+            bar_len = self.bar_construction.bars[n_bar]['L']
+            x = np.linspace(0, bar_len, num=points_num)
+            y = np.zeros(shape=points_num, dtype=float)
+            for i, c in enumerate(x):
+                y[i] = self.bar_construction.compute_Ux(n_bar, c)
+            x = np.linspace(sum_bar_len, sum_bar_len + bar_len, num=points_num)
+            sum_bar_len += bar_len
+            self.Ux_epure.axes.plot(x, y)
+            self.Ux_epure.axes.fill_between(x, 0, y)
+        self.Ux_epure.fig.canvas.draw()
 
 
 if __name__ == '__main__':
