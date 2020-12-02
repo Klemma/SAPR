@@ -178,6 +178,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if len(bar_forces) == 0:
             return
 
+        if len(bars) != len(bar_forces):
+            return
+
         bar_force_pen = QPen(QColor(*Color.cyan), 3)
         heads_count = 4
         bars.reverse()

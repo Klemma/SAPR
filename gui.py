@@ -362,7 +362,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "SAPR"))
         self.add_bar_btn.setText(_translate("MainWindow", "Добавить стержень"))
         self.add_force_btn.setText(_translate("MainWindow", "Добавить нагрузку"))
         self.forces_table.setSortingEnabled(False)
