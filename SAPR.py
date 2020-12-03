@@ -178,8 +178,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if len(bar_forces) == 0:
             return
 
-        if len(bars) != len(bar_forces):
-            return
+        # if len(bars) != len(bar_forces):
+        #     return
 
         bar_force_pen = QPen(QColor(*Color.cyan), 3)
         heads_count = 4
@@ -729,6 +729,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.bars_table.horizontalHeaderItem(col).text(): float(self.bars_table.item(last_row, col).text())
                 for col in range(cols)}
             self.bar_construction.add_bar(properties)
+            self.draw_bar()
             self.bars_table.insertRow(last_row + 1)
             for col in range(cols - 1):
                 bar_property = QTableWidgetItem("1")
@@ -737,7 +738,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.set_table_items_alignment(self.bars_table)
             self.set_table_cell_color(self.bars_table, Color.white, last_row)
             self.set_table_cell_color(self.bars_table, Color.light_yellow, last_row + 1)
-            self.draw_bar()
 
     def del_bar_btn_clicked(self):
         bar_n = len(self.bar_construction.bars)
